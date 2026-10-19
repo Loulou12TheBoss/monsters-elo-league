@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Page, PageHeader, Panel, TeamLogo, Winrate } from "@/components/mel";
+import { TeamLink, Page, PageHeader, Panel, TeamLogo, Winrate } from "@/components/mel";
 import { ranked } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/equipes")({
@@ -25,7 +25,7 @@ function Equipes() {
           <Panel key={t.id} className="fade-up">
             <div className="flex items-center gap-4">
               <TeamLogo team={t} size={56} />
-              <div className="flex-1"><p className="font-display text-lg font-bold">{t.name}</p><p className="text-xs text-muted-foreground">#{i + 1} · {t.region}</p></div>
+              <div className="flex-1"><TeamLink team={t} className="block font-display text-lg font-bold" /><p className="text-xs text-muted-foreground">#{i + 1} · {t.region}</p></div>
               <p className="font-display text-xl font-bold text-primary">{t.elo}</p>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
