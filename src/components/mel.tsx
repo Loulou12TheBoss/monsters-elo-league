@@ -56,12 +56,18 @@ export function DemoBadge({ className }: { className?: string }) {
   return <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gold", className)}>● Données fictives</span>;
 }
 
-export function PageHeader({ eyebrow, title, desc }: { eyebrow: string; title: string; desc?: string }) {
+/** Fonctionnalité simulée localement (ex. recherche de match, variations d'ELO). */
+export function SimBadge({ className }: { className?: string }) {
+  return <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-dashed border-accent/50 bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-accent", className)}>◇ Simulation</span>;
+}
+
+export function PageHeader({ eyebrow, title, desc, sim }: { eyebrow: string; title: string; desc?: string; sim?: boolean }) {
   return (
     <div className="fade-up mb-8 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-display text-xs font-semibold uppercase tracking-[0.25em] text-primary">{eyebrow}</span>
         <DemoBadge />
+        {sim && <SimBadge />}
       </div>
       <h1 className="text-3xl font-bold md:text-5xl">{title}</h1>
       {desc && <p className="max-w-2xl text-muted-foreground">{desc}</p>}
@@ -115,7 +121,7 @@ export function MatchCard({ m, focus }: { m: Match; focus?: string }) {
         <span>BO3 · {m.mode} · Manches : {m.rounds.map((r) => r.join("-")).join(" / ")}</span>
         <span className="flex items-center gap-2">
           {res && <span className={cn("rounded px-1.5 font-display font-bold", res === "V" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive")}>{res}</span>}
-          <span className="text-primary">Vainqueur : {teamById(w).tag} · ±{m.delta} ELO simulé</span>
+          <span className="text-primary">Vainqueur : {teamById(w).tag} · ±{m.delta} ELO (simulé)</span>
           <span>{m.date}</span>
         </span>
       </div>

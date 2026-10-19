@@ -33,7 +33,7 @@ function Classement() {
 
   return (
     <Page>
-      <PageHeader eyebrow="Saison 1" title="Classement" desc="Valeurs d'exemple : aucun calcul ELO n'est encore actif." />
+      <PageHeader sim eyebrow="Saison 1" title="Classement" desc="ELO simulé localement à partir de l'historique fictif (départ 1500, K=32). Aucun calcul officiel n'est actif." />
 
       <div className="fade-up mb-10 grid grid-cols-3 items-end gap-2 sm:gap-4">
         {podium.map((t) => { const r = rankOf(t.id); return (
