@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Swords } from "lucide-react";
-import { Page, PageHeader, Panel, TeamLogo } from "@/components/mel";
+import { Eye, Loader2, Swords, X } from "lucide-react";
+import { TeamLink, Page, PageHeader, Panel, TeamLogo } from "@/components/mel";
 import { bo3Maps, queue, teamById } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 
@@ -20,13 +20,15 @@ export const Route = createFileRoute("/matchmaking")({
 });
 
 function Matchmaking() {
-  const [searching, setSearching] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "searching" | "cancelled" | "demo">("idle");
   const [secs, setSecs] = useState(0);
   useEffect(() => {
-    if (!searching) return;
+    if (phase !== "searching") return;
     const id = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [searching]);
+  }, [phase]);
+  const searching = phase === "searching";
+  const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   const a = teamById("vortex"), b = teamById("onyx");
 
   return (
@@ -46,19 +48,30 @@ function Matchmaking() {
                 <span className="font-display text-sm text-muted-foreground">{q.wait}</span>
               </li>); })}
           </ul>
-          <Button className="mt-5 w-full glow font-display uppercase tracking-wider" size="lg" variant={searching ? "outline" : "default"}
-            onClick={() => { setSearching(!searching); setSecs(0); }}>
-            {searching ? <><Loader2 className="animate-spin" /> Recherche… {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")} — Annuler</> : <><Swords /> Rechercher un match</>}
-          </Button>
+          <div className="mt-5 rounded-lg border bg-background/60 p-3 text-sm" aria-live="polite">
+            {phase === "idle" && <p className="text-muted-foreground">Prêt. Lancez une recherche simulée.</p>}
+            {phase === "searching" && <p className="flex items-center gap-2 text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Recherche simulée en cours… {time}</p>}
+            {phase === "cancelled" && <p className="text-destructive">Recherche annulée après {time}. Aucune équipe n'a été contactée.</p>}
+            {phase === "demo" && <p className="text-gold">Démonstration : voici à quoi ressemblerait un match trouvé. Ce n'est pas un vrai adversaire.</p>}
+          </div>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            {searching ? (
+              <Button className="flex-1" size="lg" variant="destructive" onClick={() => setPhase("cancelled")}><X /> Arrêter la recherche</Button>
+            ) : (
+              <Button className="flex-1 glow font-display uppercase tracking-wider" size="lg" onClick={() => { setSecs(0); setPhase("searching"); }}><Swords /> Lancer la recherche</Button>
+            )}
+            <Button size="lg" variant="outline" onClick={() => setPhase("demo")}><Eye /> Voir la démo « match trouvé »</Button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">⚠ Le matchmaking réel n'est pas encore connecté : la recherche tourne indéfiniment et ne trouvera jamais d'adversaire.</p>
         </Panel>
 
-        <Panel className="bg-hero">
-          <p className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">Aperçu d'affrontement · BO3</p>
+        <Panel className={phase === "demo" ? "bg-hero border-gold/50 glow" : "bg-hero"}>
+          <p className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">{phase === "demo" ? "Match trouvé — démonstration" : "Exemple d'affrontement"} · BO3</p>
           <div className="my-8 flex items-center justify-around gap-4">
             {[a, b].map((t, i) => (
               <div key={t.id} className={`flex flex-col items-center gap-3 text-center ${i === 1 ? "order-3" : ""}`}>
                 <TeamLogo team={t} size={80} />
-                <p className="font-display text-lg font-bold">{t.name}</p>
+                <TeamLink team={t} className="font-display text-lg font-bold" />
                 <p className="font-display text-primary">{t.elo} ELO</p>
               </div>
             ))}
