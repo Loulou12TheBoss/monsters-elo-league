@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Eye, Loader2, Swords, X } from "lucide-react";
 import { TeamLink, Page, PageHeader, Panel, TeamLogo } from "@/components/mel";
 import { bo3Maps, queue, teamById } from "@/lib/demo-data";
+import { eloDelta } from "@/lib/elo";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/matchmaking")({
@@ -33,7 +34,7 @@ function Matchmaking() {
 
   return (
     <Page>
-      <PageHeader eyebrow="File compétitive" title="Matchmaking" desc="Simulation visuelle : la recherche ne lance aucun vrai match et n'est pas encore reliée à un serveur." />
+      <PageHeader sim eyebrow="File compétitive" title="Matchmaking" desc="Simulation visuelle : la recherche ne lance aucun vrai match et n'est pas encore reliée à un serveur." />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <Panel>
           <div className="mb-4 flex items-center justify-between">
@@ -86,7 +87,7 @@ function Matchmaking() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">Gain estimé : +12 / −12 ELO (exemple, aucun résultat n'est vérifié)</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">Variation estimée (K=32) : victoire {a.name} +{eloDelta(a.elo, b.elo)} · victoire {b.name} +{eloDelta(b.elo, a.elo)} — exemple, aucun résultat n'est vérifié</p>
         </Panel>
       </div>
     </Page>

@@ -15,7 +15,7 @@ export const Route = createFileRoute("/historique")({
   }),
   component: () => (
     <Page>
-      <PageHeader eyebrow="Résultats" title="Historique des matchs" desc="Matchs fictifs : les scores et variations d'ELO sont simulés, aucun résultat n'a été vérifié." />
+      <PageHeader sim eyebrow="Résultats" title="Historique des matchs" desc="Matchs fictifs : les scores et variations d'ELO sont simulés, aucun résultat n'a été vérifié." />
       <div className="space-y-2">{matches.map((m) => <MatchCard key={m.id} m={m} />)}</div>
     </Page>
   ),
