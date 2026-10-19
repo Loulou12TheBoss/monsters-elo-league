@@ -56,9 +56,9 @@ function Matchmaking() {
           </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             {searching ? (
-              <Button className="flex-1" size="lg" variant="destructive" onClick={() => setPhase("cancelled")}><X /> Arrêter la recherche</Button>
+              <Button className="sm:flex-1" size="lg" variant="destructive" onClick={() => setPhase("cancelled")}><X /> Arrêter la recherche</Button>
             ) : (
-              <Button className="flex-1 glow font-display uppercase tracking-wider" size="lg" onClick={() => { setSecs(0); setPhase("searching"); }}><Swords /> Lancer la recherche</Button>
+              <Button className="sm:flex-1 glow font-display uppercase tracking-wider" size="lg" onClick={() => { setSecs(0); setPhase("searching"); }}><Swords /> Lancer la recherche</Button>
             )}
             <Button size="lg" variant="outline" onClick={() => setPhase("demo")}><Eye /> Voir la démo « match trouvé »</Button>
           </div>
