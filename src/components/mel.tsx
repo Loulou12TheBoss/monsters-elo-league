@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
-import type { Team } from "@/lib/demo-data";
+import { matchScore, matchWinner, teamById, type Match, type Team } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -9,6 +9,7 @@ const nav = [
   { to: "/classement", label: "Classement" },
   { to: "/matchmaking", label: "Matchmaking" },
   { to: "/equipes", label: "Équipes" },
+  { to: "/historique", label: "Historique" },
   { to: "/profil", label: "Profil" },
 ] as const;
 
@@ -23,7 +24,7 @@ export function Navbar() {
         </Link>
         <nav className="hidden gap-1 md:flex">
           {nav.map((n) => (
-            <Link key={n.to} to={n.to} activeOptions={{ exact: true }}
+            <Link key={n.to} to={n.to} activeOptions={{ exact: n.to === "/" }}
               className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               activeProps={{ className: "!text-primary bg-primary/10" }}>{n.label}</Link>
           ))}
@@ -33,7 +34,7 @@ export function Navbar() {
       {open && (
         <nav className="flex flex-col border-t px-4 py-2 md:hidden">
           {nav.map((n) => (
-            <Link key={n.to} to={n.to} onClick={() => setOpen(false)} activeOptions={{ exact: true }}
+            <Link key={n.to} to={n.to} onClick={() => setOpen(false)} activeOptions={{ exact: n.to === "/" }}
               className="rounded-md px-3 py-3 text-muted-foreground" activeProps={{ className: "!text-primary" }}>{n.label}</Link>
           ))}
         </nav>
@@ -87,4 +88,37 @@ export function Page({ children }: { children: ReactNode }) {
 
 export function Winrate({ t }: { t: Team }) {
   return <>{Math.round((t.wins / t.played) * 100)}%</>;
+}
+
+export function TeamLink({ team, className }: { team: Team; className?: string }) {
+  return <Link to="/equipes/$teamId" params={{ teamId: team.id }} className={cn("hover:text-primary hover:underline underline-offset-4", className)}>{team.name}</Link>;
+}
+
+export function EmptyState({ title, desc }: { title: string; desc: string }) {
+  return <div className="rounded-xl border border-dashed p-10 text-center"><p className="font-display text-lg font-semibold">{title}</p><p className="mt-1 text-sm text-muted-foreground">{desc}</p></div>;
+}
+
+export function MatchCard({ m, focus }: { m: Match; focus?: string }) {
+  const a = teamById(m.a), b = teamById(m.b);
+  const [sa, sb] = matchScore(m); const w = matchWinner(m);
+  const res = focus ? (w === focus ? "V" : "D") : null;
+  return (
+    <div className="rounded-lg bg-muted/50 p-3">
+      <div className="flex items-center gap-2">
+        <TeamLogo team={a} size={30} />
+        <TeamLink team={a} className={cn("flex-1 truncate text-sm", w === a.id ? "font-semibold" : "text-muted-foreground")} />
+        <span className="font-display text-lg font-bold">{sa} – {sb}</span>
+        <TeamLink team={b} className={cn("flex-1 truncate text-right text-sm", w === b.id ? "font-semibold" : "text-muted-foreground")} />
+        <TeamLogo team={b} size={30} />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>BO3 · {m.mode} · Manches : {m.rounds.map((r) => r.join("-")).join(" / ")}</span>
+        <span className="flex items-center gap-2">
+          {res && <span className={cn("rounded px-1.5 font-display font-bold", res === "V" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive")}>{res}</span>}
+          <span className="text-primary">Vainqueur : {teamById(w).tag} · ±{m.delta} ELO simulé</span>
+          <span>{m.date}</span>
+        </span>
+      </div>
+    </div>
+  );
 }

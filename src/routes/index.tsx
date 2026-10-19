@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Swords, Trophy } from "lucide-react";
-import { DemoBadge, Page, Panel, TeamLogo } from "@/components/mel";
-import { platformStats, ranked, recentMatches, teamById } from "@/lib/demo-data";
+import { DemoBadge, MatchCard, Page, Panel, TeamLink, TeamLogo } from "@/components/mel";
+import { matches, platformStats, ranked } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -55,7 +55,7 @@ function Home() {
                 <li key={t.id} className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
                   <span className={`w-6 font-display font-bold ${i === 0 ? "text-gold" : "text-muted-foreground"}`}>{i + 1}</span>
                   <TeamLogo team={t} size={36} />
-                  <span className="flex-1 font-medium">{t.name}</span>
+                  <TeamLink team={t} className="flex-1 font-medium" />
                   <span className="font-display font-bold text-primary">{t.elo}</span>
                 </li>
               ))}
@@ -63,23 +63,8 @@ function Home() {
           </Panel>
           <Panel>
             <h2 className="mb-4 text-xl font-semibold">Derniers matchs</h2>
-            <ul className="space-y-2">
-              {recentMatches.map((m, i) => {
-                const a = teamById(m.a), b = teamById(m.b); const aWon = m.score[0] > m.score[1];
-                return (
-                  <li key={i} className="rounded-lg bg-muted/50 p-3">
-                    <div className="flex items-center gap-2">
-                      <TeamLogo team={a} size={30} />
-                      <span className={`flex-1 truncate text-sm ${aWon ? "font-semibold" : "text-muted-foreground"}`}>{a.name}</span>
-                      <span className="font-display text-lg font-bold">{m.score[0]} – {m.score[1]}</span>
-                      <span className={`flex-1 truncate text-right text-sm ${!aWon ? "font-semibold" : "text-muted-foreground"}`}>{b.name}</span>
-                      <TeamLogo team={b} size={30} />
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>BO3 · {m.mode}</span><span className="text-primary">±{m.delta} ELO · {m.ago}</span></div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-2">{matches.slice(0, 4).map((m) => <MatchCard key={m.id} m={m} />)}</div>
+            <Link to="/historique" className="mt-3 inline-flex items-center gap-1 text-sm text-primary">Tout l'historique <ArrowRight className="h-4 w-4" /></Link>
           </Panel>
         </div>
       </Page>
