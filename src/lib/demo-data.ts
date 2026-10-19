@@ -6,7 +6,7 @@ export type Team = {
 
 const mk = (id: string, name: string, tag: string, elo: number, wins: number, losses: number, region: string, color: string, players: string[]): Team => ({
   id, name, tag, elo, wins, losses, played: wins + losses, region, color,
-  players: players.map((p, i) => ({ name: p, tag: `#DEMO${(id.length * 7 + i * 13).toString(36).toUpperCase()}${i}X`, role: ["Capitaine", "Tank", "Support"][i] })),
+  players: players.map((p, i) => ({ name: p, tag: `#DEMO${(id.length * 7 + i * 13).toString(36).toUpperCase()}${i}X`, role: ["Capitaine", "Tank", "Support"][i] ?? "Joueur" })),
 });
 
 export const teams: Team[] = [
@@ -26,10 +26,10 @@ export const ranked = [...teams].sort((a, b) => b.elo - a.elo);
 export const teamById = (id: string) => teams.find((t) => t.id === id)!;
 
 export const recentMatches = [
-  { a: "vortex", b: "hydra", score: [2, 1], delta: 14, mode: "Razzia de gemmes", ago: "il y a 12 min" },
-  { a: "onyx", b: "titan", score: [2, 0], delta: 11, mode: "Brawl Ball", ago: "il y a 27 min" },
-  { a: "glitch", b: "ember", score: [1, 2], delta: 16, mode: "Prime", ago: "il y a 41 min" },
-  { a: "frost", b: "neon", score: [2, 1], delta: 9, mode: "Zone réservée", ago: "il y a 1 h" },
+  { a: "vortex", b: "hydra", score: [2, 1] as [number, number], delta: 14, mode: "Razzia de gemmes", ago: "il y a 12 min" },
+  { a: "onyx", b: "titan", score: [2, 0] as [number, number], delta: 11, mode: "Brawl Ball", ago: "il y a 27 min" },
+  { a: "glitch", b: "ember", score: [1, 2] as [number, number], delta: 16, mode: "Prime", ago: "il y a 41 min" },
+  { a: "frost", b: "neon", score: [2, 1] as [number, number], delta: 9, mode: "Zone réservée", ago: "il y a 1 h" },
 ];
 
 export const platformStats = [
