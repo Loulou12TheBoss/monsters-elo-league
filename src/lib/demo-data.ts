@@ -1,7 +1,7 @@
 // Toutes les données ci-dessous sont FICTIVES (démonstration).
 // Seules les "sources" (équipes, joueurs, matchs + manches) sont saisies à la main ;
 // ELO, victoires, défaites, rangs et variations sont DÉRIVÉS de l'historique.
-import { START_ELO, applyDelta, eloDelta, isValidBo3 } from "./elo";
+import { START_ELO, applyDelta, eloDelta, eloLoss, isValidBo3 } from "./elo";
 
 export type Player = { name: string; tag: string; role: string };
 export type Team = {
@@ -10,7 +10,7 @@ export type Team = {
 };
 export type Match = {
   id: string; a: string; b: string; rounds: [number, number][]; mode: string; date: string;
-  winner: string; delta: number; eloBefore: [number, number];
+  winner: string; deltaWin: number; deltaLose: number; eloBefore: [number, number];
 };
 
 const roles = ["Capitaine", "Tank", "Support"];
