@@ -50,12 +50,17 @@ function build() {
     const aWins = winners.filter((w) => w === "a").length === 2;
     const [winner, loser] = aWins ? [a, b] : [b, a];
     const before: [number, number] = [elo.get(a)!, elo.get(b)!];
-    const delta = eloDelta(elo.get(winner)!, elo.get(loser)!);
-    elo.set(winner, applyDelta(elo.get(winner)!, delta));
-    elo.set(loser, applyDelta(elo.get(loser)!, -delta));
+    // Les deux variations partent des ELO avant le match, chacune avec le K
+    // propre à l'équipe (selon ses matchs déjà joués), plancher à 0 appliqué séparément.
+    const playedW = rec.get(winner)!.w + rec.get(winner)!.l;
+    const playedL = rec.get(loser)!.w + rec.get(loser)!.l;
+    const deltaWin = eloDelta(before[aWins ? 0 : 1], before[aWins ? 1 : 0], playedW);
+    const deltaLose = eloLoss(before[aWins ? 0 : 1], before[aWins ? 1 : 0], playedL);
+    elo.set(winner, applyDelta(elo.get(winner)!, deltaWin));
+    elo.set(loser, applyDelta(elo.get(loser)!, -deltaLose));
     rec.get(winner)!.w++; rec.get(loser)!.l++;
     const day = 5 + Math.floor(i / 2);
-    return { id: `m${i + 1}`, a, b, rounds, mode: modes[i % modes.length]!, date: `${day} oct. 2026`, winner, delta, eloBefore: before };
+    return { id: `m${i + 1}`, a, b, rounds, mode: modes[i % modes.length]!, date: `${day} oct. 2026`, winner, deltaWin, deltaLose, eloBefore: before };
   });
   const ts: Team[] = seedTeams.map((t) => {
     const r = rec.get(t.id)!;
@@ -87,7 +92,7 @@ export const platformStats = [
 // File d'attente fictive : la plage ELO dérive de l'ELO de l'équipe.
 export const queue = [["rogue", "0:42"], ["drift", "1:15"], ["neon", "2:03"], ["frost", "3:28"]].map(([team, wait]) => {
   const e = teamById(team!).elo;
-  return { team: team!, wait: wait!, range: `${e - 50}–${e + 50}` };
+  return { team: team!, wait: wait!, range: `${Math.max(0, e - 50)}–${e + 50}` };
 });
 
 export const bo3Maps = [
