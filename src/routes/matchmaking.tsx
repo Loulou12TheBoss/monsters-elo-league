@@ -87,7 +87,7 @@ function Matchmaking() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">Variation estimée (K=32) : victoire {a.name} +{eloDelta(a.elo, b.elo)} · victoire {b.name} +{eloDelta(b.elo, a.elo)} — exemple, aucun résultat n'est vérifié</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">Variation estimée (K=40 les 10 premiers matchs, puis 24) : victoire {a.name} +{eloDelta(a.elo, b.elo, a.played)} · victoire {b.name} +{eloDelta(b.elo, a.elo, b.played)} — exemple, aucun résultat n'est vérifié</p>
         </Panel>
       </div>
     </Page>

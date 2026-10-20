@@ -121,7 +121,7 @@ export function MatchCard({ m, focus }: { m: Match; focus?: string }) {
         <span>BO3 · {m.mode} · Manches : {m.rounds.map((r) => r.join("-")).join(" / ")}</span>
         <span className="flex items-center gap-2">
           {res && <span className={cn("rounded px-1.5 font-display font-bold", res === "V" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive")}>{res}</span>}
-          <span className="text-primary">Vainqueur : {teamById(w).tag} · ±{m.delta} ELO (simulé)</span>
+          <span className="text-primary">Vainqueur : {teamById(w).tag} · +{m.deltaWin} / −{m.deltaLose} ELO (simulé)</span>
           <span>{m.date}</span>
         </span>
       </div>
