@@ -11,6 +11,7 @@ const nav = [
   { to: "/equipes", label: "Équipes" },
   { to: "/historique", label: "Historique" },
   { to: "/profil", label: "Profil" },
+  { to: "/connexion", label: "Compte" },
 ] as const;
 
 export function Navbar() {
