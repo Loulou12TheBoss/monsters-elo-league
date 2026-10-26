@@ -153,7 +153,7 @@ function Equipes() {
         p_season_id: season.id,
       });
       if (rpcError) throw rpcError;
-      setRosterMessages((old) => ({ ...old, [team.id]: "Équipe inscrite : elle est en attente d’approbation avant d’apparaître au classement officiel." }));
+      setRosterMessages((old) => ({ ...old, [team.id]: "Inscription créée. L’équipe rejoindra automatiquement le classement dès qu’elle aura 3 titulaires actifs." }));
       await loadData();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
@@ -245,7 +245,7 @@ function Equipes() {
                 {!season ? <p className="mt-3 text-sm text-muted-foreground">Aucune saison ouverte pour le moment.</p>
                   : !registration ? <div className="mt-3"><p className="mb-2 text-xs text-muted-foreground">Cette équipe n’est pas encore inscrite à {season.name}.</p><button onClick={() => void registerTeam(team)} disabled={busyRegistration === team.id} className="w-full rounded-md bg-primary px-3 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">{busyRegistration === team.id ? "Inscription…" : "Inscrire à la saison"}</button></div>
                   : <>
-                    <p className="mt-3 text-xs text-muted-foreground">Inscription : <strong className="text-foreground">{registration.status === "pending" ? "En attente d’approbation" : registration.status === "approved" ? "Approuvée — classement officiel" : registration.status === "withdrawn" ? "Retirée" : "Disqualifiée"}</strong></p>
+                    <p className="mt-3 text-xs text-muted-foreground">Inscription : <strong className="text-foreground">{registration.status === "pending" ? "En attente de 3 titulaires actifs" : registration.status === "approved" ? "Admissible — classement officiel" : registration.status === "withdrawn" ? "Retirée" : "Disqualifiée"}</strong></p>
                     <div className="mt-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><Users className="h-4 w-4" /> Composition ({roster.length}/4)</div>
                     {roster.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Aucun joueur dans le roster saisonnier.</p>
                       : <ul className="mt-2 space-y-2">{roster.map((player) => <li key={player.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm"><span className="min-w-0 truncate">{player.profiles?.display_name ?? player.profiles?.username ?? "Joueur"}</span><span className="shrink-0 rounded bg-background px-2 py-1 text-[10px] uppercase text-muted-foreground">{player.role === "starter" ? "Titulaire" : "Remplaçant"}</span></li>)}</ul>}
@@ -265,10 +265,10 @@ function Equipes() {
         </Panel>
       </div>
 
-      <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="font-display text-xl font-bold">Classement des équipes inscrites</h2><p className="text-sm text-muted-foreground">Seules les inscriptions approuvées apparaissent au classement officiel.</p></div><button onClick={() => void loadData()} disabled={loading} className="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground disabled:opacity-50"><RefreshCw className="h-4 w-4" /> Actualiser</button></div>
+      <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="font-display text-xl font-bold">Classement des équipes inscrites</h2><p className="text-sm text-muted-foreground">Les équipes rejoignent automatiquement le classement dès que leur composition compte 3 titulaires actifs.</p></div><button onClick={() => void loadData()} disabled={loading} className="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground disabled:opacity-50"><RefreshCw className="h-4 w-4" /> Actualiser</button></div>
       {loading ? <Panel><p className="text-sm text-muted-foreground">Chargement des équipes…</p></Panel>
         : error ? <Panel><p className="text-sm text-destructive">{error}</p><button className="mt-3 rounded-md border px-3 py-2 text-sm" onClick={() => void loadData()}>Réessayer</button></Panel>
-        : publicTeams.length === 0 ? <EmptyState title={season ? "Aucune équipe inscrite" : "Aucune saison ouverte"} desc={season ? "Les équipes apparaîtront ici après approbation de leur inscription." : "Les équipes seront affichées lorsqu'une saison sera ouverte."} />
+        : publicTeams.length === 0 ? <EmptyState title={season ? "Aucune équipe inscrite" : "Aucune saison ouverte"} desc={season ? "Les équipes apparaîtront ici dès que leur composition comptera 3 titulaires actifs." : "Les équipes seront affichées lorsqu'une saison sera ouverte."} />
         : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{publicTeams.map((registration) => {
           const team = registration.teams!;
           const roster = (registration.season_roster ?? []).filter((player) => player.status === "active");
