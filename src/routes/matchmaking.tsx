@@ -1,18 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Eye, Loader2, Swords, X } from "lucide-react";
-import { TeamLink, Page, PageHeader, Panel, TeamLogo } from "@/components/mel";
-import { bo3Maps, queue, teamById } from "@/lib/demo-data";
-import { eloDelta } from "@/lib/elo";
+import { Link } from "@tanstack/react-router";
+import { Loader2, RefreshCw, Swords } from "lucide-react";
+import { EmptyState, Page, PageHeader, Panel, TeamLogo } from "@/components/mel";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { errorMessage, getLeaderboard, type MelSeason, type MelTeam } from "@/lib/mel-data";
 
 export const Route = createFileRoute("/matchmaking")({
   head: () => ({
     meta: [
       { title: "Matchmaking — Monsters ELO League" },
-      { name: "description", content: "File d'attente et aperçu d'affrontement BO3 de la MEL (démo)." },
+      { name: "description", content: "Lancez un défi officiel entre équipes inscrites à la MEL." },
       { property: "og:title", content: "Matchmaking — MEL" },
-      { property: "og:description", content: "Trouvez un adversaire de votre niveau en BO3." },
+      { property: "og:description", content: "Défis compétitifs entre équipes de la MEL." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -20,76 +21,69 @@ export const Route = createFileRoute("/matchmaking")({
   component: Matchmaking,
 });
 
+const db = supabase as any;
+const logoTeam = (t: MelTeam) => ({ id: t.id, name: t.name, tag: t.name.slice(0, 3).toUpperCase(), region: "EMEA", color: "#39ff88", players: [], elo: t.elo, played: t.played, wins: t.wins, losses: t.losses });
+
+type PendingMatch = { id: string; status: string; created_at: string; a: string; b: string; aElo: number; bElo: number };
 function Matchmaking() {
-  const [phase, setPhase] = useState<"idle" | "searching" | "cancelled" | "demo">("idle");
-  const [secs, setSecs] = useState(0);
-  useEffect(() => {
-    if (phase !== "searching") return;
-    const id = setInterval(() => setSecs((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [phase]);
-  const searching = phase === "searching";
-  const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
-  const a = teamById("vortex"), b = teamById("onyx");
+  const [teams, setTeams] = useState<MelTeam[]>([]);
+  const [season, setSeason] = useState<MelSeason | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [pendingMatches, setPendingMatches] = useState<PendingMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [challenging, setChallenging] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
-  return (
-    <Page>
-      <PageHeader sim eyebrow="File compétitive" title="Matchmaking" desc="Simulation visuelle : la recherche ne lance aucun vrai match et n'est pas encore reliée à un serveur." />
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <Panel>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">File d'attente</h2>
-            <span className="flex items-center gap-2 text-xs text-primary"><span className="pulse-dot h-2 w-2 rounded-full bg-primary" /> {queue.length} équipes</span>
-          </div>
-          <ul className="space-y-2">
-            {queue.map((q) => { const t = teamById(q.team); return (
-              <li key={q.team} className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-                <TeamLogo team={t} size={34} />
-                <div className="flex-1"><p className="text-sm font-semibold">{t.name}</p><p className="text-xs text-muted-foreground">Plage ELO {q.range}</p></div>
-                <span className="font-display text-sm text-muted-foreground">{q.wait}</span>
-              </li>); })}
-          </ul>
-          <div className="mt-5 rounded-lg border bg-background/60 p-3 text-sm" aria-live="polite">
-            {phase === "idle" && <p className="text-muted-foreground">Prêt. Lancez une recherche simulée.</p>}
-            {phase === "searching" && <p className="flex items-center gap-2 text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Recherche simulée en cours… {time}</p>}
-            {phase === "cancelled" && <p className="text-destructive">Recherche annulée après {time}. Aucune équipe n'a été contactée.</p>}
-            {phase === "demo" && <p className="text-gold">Démonstration : voici à quoi ressemblerait un match trouvé. Ce n'est pas un vrai adversaire.</p>}
-          </div>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            {searching ? (
-              <Button className="sm:flex-1" size="lg" variant="destructive" onClick={() => setPhase("cancelled")}><X /> Arrêter la recherche</Button>
-            ) : (
-              <Button className="sm:flex-1 glow font-display uppercase tracking-wider" size="lg" onClick={() => { setSecs(0); setPhase("searching"); }}><Swords /> Lancer la recherche</Button>
-            )}
-            <Button size="lg" variant="outline" onClick={() => setPhase("demo")}><Eye /> Voir la démo « match trouvé »</Button>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">⚠ Le matchmaking réel n'est pas encore connecté : la recherche tourne indéfiniment et ne trouvera jamais d'adversaire.</p>
-        </Panel>
+  async function load() {
+    setLoading(true); setError("");
+    try {
+      const [{ season: currentSeason, teams: liveTeams }, { data: authData }] = await Promise.all([getLeaderboard(), supabase.auth.getUser()]);
+      setSeason(currentSeason); setTeams(liveTeams); setUserId(authData.user?.id ?? null);
+      if (!currentSeason) { setPendingMatches([]); return; }
+      const { data, error: matchesError } = await db.from("matches")
+        .select("id, status, created_at, team_a_sets_won, team_b_sets_won, team_a:season_registrations!matches_team_a_registration_id_fkey(id, elo, teams!inner(name)), team_b:season_registrations!matches_team_b_registration_id_fkey(id, elo, teams!inner(name))")
+        .eq("season_id", currentSeason.id)
+        .in("status", ["pending", "awaiting_validation", "disputed"])
+        .order("created_at", { ascending: false }).limit(30);
+      if (matchesError) throw matchesError;
+      setPendingMatches((data ?? []).map((row: any) => {
+        const a = Array.isArray(row.team_a) ? row.team_a[0] : row.team_a;
+        const b = Array.isArray(row.team_b) ? row.team_b[0] : row.team_b;
+        const ta = Array.isArray(a?.teams) ? a.teams[0] : a?.teams;
+        const tb = Array.isArray(b?.teams) ? b.teams[0] : b?.teams;
+        return { id: row.id, status: row.status, created_at: row.created_at, a: ta?.name ?? "Équipe A", b: tb?.name ?? "Équipe B", aElo: a?.elo ?? 0, bElo: b?.elo ?? 0 };
+      }));
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { void load(); }, []);
 
-        <Panel className={phase === "demo" ? "bg-hero border-gold/50 glow" : "bg-hero"}>
-          <p className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">{phase === "demo" ? "Match trouvé — démonstration" : "Exemple d'affrontement"} · BO3</p>
-          <div className="my-8 flex items-center justify-around gap-4">
-            {[a, b].map((t, i) => (
-              <div key={t.id} className={`flex flex-col items-center gap-3 text-center ${i === 1 ? "order-3" : ""}`}>
-                <TeamLogo team={t} size={80} />
-                <TeamLink team={t} className="font-display text-lg font-bold" />
-                <p className="font-display text-primary">{t.elo} ELO</p>
-              </div>
-            ))}
-            <span className="order-2 font-display text-4xl font-bold text-muted-foreground">VS</span>
-          </div>
-          <div className="space-y-2">
-            {bo3Maps.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-lg border bg-background/60 p-3">
-                <span className="grid h-8 w-8 place-items-center rounded-md bg-primary/15 font-display text-sm font-bold text-primary">{i + 1}</span>
-                <div className="flex-1"><p className="text-sm font-semibold">{m.mode}</p><p className="text-xs text-muted-foreground">{m.map}</p></div>
-                <span className="text-xs text-muted-foreground">{i === 2 ? "Si nécessaire" : "À jouer"}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">Variation estimée (K=40 les 10 premiers matchs, puis 24) : victoire {a.name} +{eloDelta(a.elo, b.elo, a.played)} · victoire {b.name} +{eloDelta(b.elo, a.elo, b.played)} — exemple, aucun résultat n'est vérifié</p>
-        </Panel>
-      </div>
-    </Page>
-  );
+  async function challenge(opponentRegistrationId: string) {
+    setChallenging(opponentRegistrationId); setError(""); setMessage("");
+    try {
+      if (!userId) throw new Error("Connecte-toi pour défier une équipe.");
+      if (season?.status !== "active") throw new Error("Le matchmaking n'est disponible que lorsqu'une saison est active.");
+      const { data: matchId, error: challengeError } = await db.rpc("mel_create_match", { p_opponent_registration_id: opponentRegistrationId });
+      if (challengeError) throw challengeError;
+      setMessage(`Défi créé avec succès (match ${String(matchId).slice(0, 8)}…). Le match attend maintenant la saisie des manches et les validations prévues par le règlement.`);
+      await load();
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setChallenging(null); }
+  }
+
+  return <Page>
+    <PageHeader eyebrow={season?.status === "active" ? "Saison active" : "Matchs officiels"} title="Matchmaking" desc="Crée un défi officiel contre une équipe inscrite. Le backend vérifie les inscriptions, les rôles de gestion et les trois titulaires de chaque équipe." />
+    {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+    {message && <p role="status" className="mb-4 rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">{message}</p>}
+    <div className="mb-6 flex justify-end"><Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className="mr-2 h-4 w-4" /> Actualiser</Button></div>
+    <Panel>
+      <div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2 text-lg font-semibold"><Swords className="h-5 w-5 text-primary" /> Défier une équipe</h2><span className="text-xs text-muted-foreground">{teams.length} équipes</span></div>
+      {!userId && <p className="mb-4 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">Connecte-toi sur la page <Link to="/profil" className="text-primary underline">Profil</Link> pour créer un défi.</p>}
+      {season?.status !== "active" && <p className="mb-4 rounded-md border border-gold/30 bg-gold/10 p-3 text-sm">La saison doit être au statut « active » pour créer un match. {season ? `Statut actuel : ${season.status}.` : "Aucune saison active n'est configurée."}</p>}
+      {loading ? <p className="text-sm text-muted-foreground">Chargement des équipes…</p> : teams.length === 0 ? <EmptyState title="Aucun adversaire disponible" desc="Les équipes apparaîtront ici après l'approbation de leur inscription à la saison." /> : <div className="grid gap-3 md:grid-cols-2">{teams.map((team) => <div key={team.registrationId} className="flex items-center gap-3 rounded-lg border bg-background/50 p-3"><TeamLogo team={logoTeam(team)} size={44} /><div className="min-w-0 flex-1"><p className="truncate font-semibold">{team.name}</p><p className="text-xs text-muted-foreground">{team.elo} ELO · {team.played} matchs</p><p className="text-xs text-muted-foreground">{team.players.filter((p) => p.role === "starter").length}/3 titulaires</p></div><Button size="sm" disabled={!userId || season?.status !== "active" || challenging !== null || team.players.filter((p) => p.role === "starter").length !== 3} onClick={() => void challenge(team.registrationId)}>{challenging === team.registrationId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Défier"}</Button></div>)}</div>}
+      <p className="mt-4 text-xs text-muted-foreground">Le défi ne calcule pas encore d'ELO. Les ELO ne changent qu'après validation du résultat par le backend. Il faut également que ton équipe ait exactement trois titulaires actifs.</p>
+    </Panel>
+    <div className="mt-8"><h2 className="mb-4 text-xl font-semibold">Matchs en cours</h2>{loading ? <Panel><p className="text-sm text-muted-foreground">Chargement…</p></Panel> : pendingMatches.length === 0 ? <EmptyState title="Aucun match en cours" desc="Les défis créés apparaîtront ici." /> : <div className="space-y-2">{pendingMatches.map((match) => <Panel key={match.id}><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">{match.a} <span className="text-muted-foreground">vs</span> {match.b}</p><p className="text-xs text-muted-foreground">Créé le {new Date(match.created_at).toLocaleString("fr-FR")}</p></div><div className="flex items-center gap-2"><span className="rounded-md bg-muted px-2 py-1 text-xs">{match.status === "pending" ? "En cours" : match.status === "disputed" ? "Contesté" : "À valider"}</span><a href={`/match/${match.id}`} className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">Ouvrir le match</a></div></div></Panel>)}</div>}</div>
+  </Page>;
 }
